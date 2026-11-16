@@ -1,47 +1,78 @@
 # Pruebas del modelo
-accuracy = accuracy_score(y_test, y_pred)
-precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
-recall = recall_score(y_test, y_pred, average='weighted', zero_division=0)
-f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
+from pathlib import Path
+import sys
 
-print("=== Métricas Finales de Evaluación en Prueba ===")
-print(f"Accuracy:  {accuracy:.4f}")
-print(f"Precision: {precision:.4f}")
-print(f"Recall:    {recall:.4f}")
-print(f"F1 Score:  {f1:.4f}")
+import joblib
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 
-# Gráfico de la Matriz de Confusión
-conf_matrix = confusion_matrix(y_test, y_pred)
-
-plt.figure(figsize=(8, 6))
-sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', 
-            xticklabels=np.unique(y_test), yticklabels=np.unique(y_test))
-plt.xlabel('Clase Predicha')
-plt.ylabel('Clase Real')
-plt.title('Matriz de Confusión - Conjunto de Prueba')
-plt.show()
+BASE_DIR = Path(__file__).resolve().parents[1]
+OUTPUT_DIR = BASE_DIR / "outputs"
+DATA_PATH = OUTPUT_DIR / "datos_preparados.pkl"
+MODEL_PATH = OUTPUT_DIR / "mejor_modelo.pkl"
 
 
-# Extraemos el Random Forest entrenado desde nuestro diccionario de modelos
-rf_model = models['Random Forest']
+def main():
+    if not DATA_PATH.exists() or not MODEL_PATH.exists():
+        print("Faltan archivos generados en los pasos anteriores.", file=sys.stderr)
+        print("Ejecuta eda.py y entrenamiento.py primero.", file=sys.stderr)
+        return 1
 
-importances = rf_model.feature_importances_
-feature_names = X.columns
-feature_importances = pd.DataFrame({'feature': feature_names, 'importance': importances})
-feature_importances = feature_importances.sort_values('importance', ascending=False)
+    prepared = joblib.load(DATA_PATH)
+    saved_model = joblib.load(MODEL_PATH)
 
-display(feature_importances)
+    y_test = prepared["y_test"]
+    predictions = saved_model["model"].predict(prepared["X_test"])
 
-# Visualización de la distribución de las variables y la variable objetivo
-plt.figure(figsize=(8, 5))
-sns.countplot(x='quality', data=data, hue='quality', palette='viridis', legend=False)
-plt.title('Distribución de las clases de Calidad (Quality)')
-plt.xlabel('Calidad')
-plt.ylabel('Cantidad de muestras')
-plt.grid(axis='y', linestyle='--', alpha=0.5)
-plt.show()
+    print(f"Modelo evaluado: {saved_model['name']}")
+    print(f"Accuracy:  {accuracy_score(y_test, predictions):.4f}")
+    print(
+        f"Precision: {precision_score(y_test, predictions, average='weighted', zero_division=0):.4f}"
+    )
+    print(
+        f"Recall:    {recall_score(y_test, predictions, average='weighted', zero_division=0):.4f}"
+    )
+    print(
+        f"F1 Score:  {f1_score(y_test, predictions, average='weighted', zero_division=0):.4f}"
+    )
 
-# Histograma de algunas características clave
-data[['alcohol', 'sulphates', 'volatile acidity', 'citric acid']].hist(bins=15, figsize=(12, 8))
-plt.suptitle('Distribución de Características Clave')
-plt.show()
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    labels = sorted(pd.unique(y_test))
+    matrix = confusion_matrix(y_test, predictions, labels=labels)
+
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(
+        matrix, annot=True, fmt="d", cmap="Blues",
+        xticklabels=labels, yticklabels=labels
+    )
+    plt.xlabel("Clase predicha")
+    plt.ylabel("Clase real")
+    plt.title("Matriz de confusión")
+    plt.tight_layout()
+    plt.savefig(OUTPUT_DIR / "matriz_confusion.png")
+    plt.close()
+
+    data = prepared["data"]
+    plt.figure(figsize=(8, 5))
+    sns.countplot(data=data, x="quality", color="steelblue")
+    plt.title("Distribución de calidad")
+    plt.tight_layout()
+    plt.savefig(OUTPUT_DIR / "distribucion_calidad.png")
+    plt.close()
+
+    print(f"\nGráficos guardados en: {OUTPUT_DIR}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
