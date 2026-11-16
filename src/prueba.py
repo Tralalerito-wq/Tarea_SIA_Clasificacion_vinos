@@ -1,29 +1,47 @@
 # Pruebas del modelo
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-accuracy= accuracy_score(y_test, y_pred)
-precision= precision_score(y_test, y_pred, average='weighted')
-recall= recall_score(y_test, y_pred, average='weighted')
-f1= f1_score(y_test, y_pred, average='weighted')
-conf_matrix= confusion_matrix(y_test, y_pred)
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
+recall = recall_score(y_test, y_pred, average='weighted', zero_division=0)
+f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
 
-print("Accuracy:", accuracy)
-print("Precision:", precision)
-print("Recall:", recall)
-print("F1 Score:", f1)
-print("Confusion Matrix:\n", conf_matrix)
+print("=== Métricas Finales de Evaluación en Prueba ===")
+print(f"Accuracy:  {accuracy:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall:    {recall:.4f}")
+print(f"F1 Score:  {f1:.4f}")
 
-# Analizar la distribución de la variable objetivo 'quality'
-distribucion = y.value_counts().sort_index()
-print("Distribución de clases de calidad:")
-print(distribucion)
+# Gráfico de la Matriz de Confusión
+conf_matrix = confusion_matrix(y_test, y_pred)
 
-# Graficar la distribución
-import seaborn as sns
-import matplotlib.pyplot as plt
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=np.unique(y_test), yticklabels=np.unique(y_test))
+plt.xlabel('Clase Predicha')
+plt.ylabel('Clase Real')
+plt.title('Matriz de Confusión - Conjunto de Prueba')
+plt.show()
 
+
+# Extraemos el Random Forest entrenado desde nuestro diccionario de modelos
+rf_model = models['Random Forest']
+
+importances = rf_model.feature_importances_
+feature_names = X.columns
+feature_importances = pd.DataFrame({'feature': feature_names, 'importance': importances})
+feature_importances = feature_importances.sort_values('importance', ascending=False)
+
+display(feature_importances)
+
+# Visualización de la distribución de las variables y la variable objetivo
 plt.figure(figsize=(8, 5))
-sns.countplot(x=y, palette='viridis')
+sns.countplot(x='quality', data=data, hue='quality', palette='viridis', legend=False)
 plt.title('Distribución de las clases de Calidad (Quality)')
 plt.xlabel('Calidad')
 plt.ylabel('Cantidad de muestras')
+plt.grid(axis='y', linestyle='--', alpha=0.5)
+plt.show()
+
+# Histograma de algunas características clave
+data[['alcohol', 'sulphates', 'volatile acidity', 'citric acid']].hist(bins=15, figsize=(12, 8))
+plt.suptitle('Distribución de Características Clave')
 plt.show()
