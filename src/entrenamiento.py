@@ -1,25 +1,16 @@
 # Entrenamiento del modelo
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
+import joblib
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
+# 1. Carga de modelo guardado y datos de prueba
+loaded_model = joblib.load('mejor_modelo.pkl')
+X_test_scaled, y_test = joblib.load('datos_prueba.pkl')
 
-lr= LogisticRegression()
-knn= KNeighborsClassifier()
-svm= SVC()
-dt= DecisionTreeClassifier()
-rf= RandomForestClassifier(max_depth= 5)
+print(f"Modelo cargado exitosamente.")
 
-dt.fit(X_train_scaled, y_train)
-rf.fit(X_train_scaled, y_train)
-lr.fit(X_train_scaled, y_train)
-knn.fit(X_train_scaled, y_train)
-svm.fit(X_train_scaled, y_train)
-
-y_pred= svm.predict(X_test_scaled)
-lr_pred= lr.predict(X_test_scaled)
-knn_pred= knn.predict(X_test_scaled)
-dt_pred= dt.predict(X_test_scaled)
-rf_pred= rf.predict(X_test_scaled)
+# 2. Evaluación del modelo en los datos de prueba
+y_pred = loaded_model.predict(X_test_scaled)
